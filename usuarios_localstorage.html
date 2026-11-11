@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Usuarios con localStorage</title>
+
+    <!-- ==================== CSS ==================== -->
+    <style>
+        :root {
+            --fondo: #f3f6fa;
+            --superficie: #ffffff;
+            --texto: #1c2733;
+            --texto-suave: #5b6b7b;
+            --borde: #d5dde6;
+            --principal: #1f6feb;
+            --principal-oscuro: #1757b8;
+            --peligro: #c62828;
+            --aviso-fondo: #fff4d6;
+            --aviso-borde: #e0b43a;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: var(--fondo);
+            color: var(--texto);
+            line-height: 1.5;
+        }
+
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        h1 { font-size: 1.6rem; margin: 0 0 4px; }
+        h2 { font-size: 1.15rem; margin: 0 0 12px; }
+
+        .subtitulo { color: var(--texto-suave); margin: 0 0 20px; }
+
+        .aviso {
+            background: var(--aviso-fondo);
+            border-left: 4px solid var(--aviso-borde);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: var(--superficie);
+            border: 1px solid var(--borde);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        label { display: block; font-weight: 600; margin-bottom: 4px; }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            border: 1px solid var(--borde);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        input:focus-visible,
+        button:focus-visible {
+            outline: 3px solid var(--principal);
+            outline-offset: 2px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: var(--principal);
+            color: #fff;
+        }
+
+        button:hover { background: var(--principal-oscuro); }
+
+        button.eliminar {
+            background: transparent;
+            color: var(--peligro);
+            border: 1px solid var(--peligro);
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        button.eliminar:hover { background: var(--peligro); color: #fff; }
+
+        .tabla-contenedor { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--borde);
+        }
+
+        th { background: var(--fondo); }
+
+        .vacio { color: var(--texto-suave); text-align: center; }
+    </style>
+</head>
+
+<body>
+    <!-- ==================== HTML ==================== -->
+    <main>
+        <h1>Registro de usuarios</h1>
+        <p class="subtitulo">Los datos se guardan en localStorage y siguen ahí después de presionar F5.</p>
+
+        <div class="aviso">
+            Usar solamente claves ficticias de prueba. Guardar contraseñas reales
+            en <code>localStorage</code> no es seguro.
+        </div>
+
+        <section class="panel">
+            <h2>Nuevo usuario</h2>
+            <form id="formulario">
+                <label for="nombre">Usuario</label>
+                <input type="text" id="nombre" required autocomplete="off">
+
+                <label for="clave">Clave de prueba</label>
+                <input type="password" id="clave" required autocomplete="off">
+
+                <button type="submit">Guardar usuario</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>Usuarios registrados</h2>
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Clave</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaUsuarios"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== JavaScript ==================== -->
+    <script>
+        // PASO 1: Recuperar los usuarios almacenados (o un arreglo vacío)
+        let usuarios = JSON.parse(
+            localStorage.getItem("usuariosDemo") || "[]"
+        );
+
+        const formulario = document.getElementById("formulario");
+        const tabla = document.getElementById("tablaUsuarios");
+
+        // PASO 2: Mostrar los usuarios al abrir la página
+        mostrarUsuarios();
+
+        // PASO 3: Escuchar el envío del formulario
+        formulario.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            let nombre = document.getElementById("nombre").value.trim();
+            let clave = document.getElementById("clave").value;
+
+            // Validar nombres repetidos
+            let existe = usuarios.some(function (usuario) {
+                return usuario.nombre === nombre;
+            });
+
+            if (existe) {
+                alert("El usuario ya existe");
+                return;
+            }
+
+            // PASO 4: Crear un objeto
+            let nuevoUsuario = { nombre: nombre, clave: clave };
+
+            // PASO 5: Agregar al arreglo
+            usuarios.push(nuevoUsuario);
+
+            // PASO 6: Guardar en localStorage
+            guardarUsuarios();
+
+            // PASO 7: Actualizar la tabla
+            mostrarUsuarios();
+
+            formulario.reset();
+        });
+
+        // Guardar el arreglo como texto JSON
+        function guardarUsuarios() {
+            localStorage.setItem("usuariosDemo", JSON.stringify(usuarios));
+        }
+
+        // Dibujar la tabla a partir del arreglo
+        function mostrarUsuarios() {
+            tabla.innerHTML = "";
+
+            if (usuarios.length === 0) {
+                let filaVacia = document.createElement("tr");
+                let celda = document.createElement("td");
+                celda.colSpan = 3;
+                celda.className = "vacio";
+                celda.textContent = "Todavía no hay usuarios. Agrega el primero arriba.";
+                filaVacia.appendChild(celda);
+                tabla.appendChild(filaVacia);
+                return;
+            }
+
+            usuarios.forEach(function (usuario, indice) {
+                let fila = document.createElement("tr");
+
+                let celdaNombre = document.createElement("td");
+                celdaNombre.textContent = usuario.nombre;
+
+                let celdaClave = document.createElement("td");
+                celdaClave.textContent = "••••••";
+
+                let celdaAccion = document.createElement("td");
+                let boton = document.createElement("button");
+                boton.textContent = "Eliminar";
+                boton.className = "eliminar";
+                boton.addEventListener("click", function () {
+                    eliminarUsuario(indice);
+                });
+
+                celdaAccion.appendChild(boton);
+                fila.appendChild(celdaNombre);
+                fila.appendChild(celdaClave);
+                fila.appendChild(celdaAccion);
+                tabla.appendChild(fila);
+            });
+        }
+
+        // Eliminar un usuario por su posición
+        function eliminarUsuario(indice) {
+            usuarios.splice(indice, 1);
+            guardarUsuarios();
+            mostrarUsuarios();
+        }
+    </script>
+</body>
+</html>
